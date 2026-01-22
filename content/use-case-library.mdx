@@ -1,0 +1,358 @@
+# Use Case Library
+
+Real examples from completed Mino projects. Each case study includes the approach, configuration, and lessons learned.
+
+## Credit Card Aggregator
+
+**Goal**: Compare credit card offers from 6 major financial sites in real-time.
+
+**Sites**: NerdWallet, Credit Karma, Bankrate, WalletHub, Forbes Advisor, The Points Guy
+
+**Approach**:
+- Parallel execution across all 6 sites
+- Stealth mode + US proxy for financial sites
+- Standardized output schema across different site formats
+
+**Configuration**:
+```typescript
+const config = {
+  url: "https://www.nerdwallet.com/best/credit-cards/travel",
+  goal: `Extract all credit card offers on this page. For each card:
+- Card name
+- Issuer (bank)
+- Annual fee
+- APR range
+- Sign-up bonus
+- Key benefits (rewards rate, perks)
+Return as JSON array.`,
+  browser_profile: "stealth",
+  proxy_config: { enabled: true, country_code: "US" }
+};
+```
+
+**Key Learnings**:
+- Financial sites have aggressive bot detection - stealth mode essential
+- US proxy required for full content access
+- Different sites structure data differently - normalize in post-processing
+- Parallel execution significantly reduces total time
+
+**Code Pattern - Parallel Execution**:
+```typescript
+const sites = [
+  { name: "NerdWallet", url: "https://nerdwallet.com/..." },
+  { name: "Credit Karma", url: "https://creditkarma.com/..." },
+  // ... more sites
+];
+
+const results = await Promise.all(
+  sites.map(async (site) => {
+    const result = await runMino({
+      url: site.url,
+      goal: standardGoal,
+      browser_profile: "stealth",
+      proxy_config: { enabled: true, country_code: "US" }
+    });
+    return { site: site.name, cards: result.resultJson };
+  })
+);
+```
+
+---
+
+## Web Lead Generator
+
+**Goal**: Extract business contact information from directory sites for sales prospecting.
+
+**Sites**: Yellow Pages, Yelp, industry directories
+
+**Approach**:
+- Search-based extraction
+- Pagination handling
+- Deduplication of results
+
+**Configuration**:
+```typescript
+const config = {
+  url: "https://www.yellowpages.com/search?search_terms=plumbers&geo_location_terms=San+Francisco",
+  goal: `For each business listing on this page, extract:
+- Business name
+- Phone number
+- Address
+- Website URL (if available)
+- Rating and review count
+
+Navigate through the first 3 pages of results, extracting from each.
+Return all results as JSON array.`,
+  browser_profile: "stealth",
+  proxy_config: { enabled: true, country_code: "US" }
+};
+```
+
+**Key Learnings**:
+- Stealth + proxy critical for directory sites
+- Pagination requires explicit instruction in goal
+- Some fields may be missing - handle null values gracefully
+- Rate limiting important to avoid IP bans
+
+**Code Pattern - Pagination**:
+```typescript
+const goal = `
+Close any popups that appear.
+Extract all business listings from the current page.
+Click "Next" to go to page 2, extract listings.
+Click "Next" to go to page 3, extract listings.
+Return all results combined as single JSON array.
+
+For each listing extract:
+- name
+- phone
+- address
+- website
+- rating
+`;
+```
+
+---
+
+## HDB Deal Sniper (Real Estate)
+
+**Goal**: Monitor HDB (Singapore public housing) resale listings and alert on good deals.
+
+**Architecture**: Mino + Gemini pipeline
+- Mino extracts listing data
+- Gemini analyzes for "good deal" criteria
+- Alerts sent when matches found
+
+**Configuration**:
+```typescript
+const config = {
+  url: "https://services2.hdb.gov.sg/webapp/BR12AWFlatAvail/BR12SEstateSummary",
+  goal: `Extract all available HDB resale flats:
+- Town/Estate
+- Flat type (3-room, 4-room, 5-room, etc.)
+- Price range
+- Remaining lease
+Return as JSON array.`,
+  browser_profile: "lite" // Singapore gov site, no bot protection
+};
+```
+
+**Post-Processing with Gemini**:
+```typescript
+const minoResult = await runMino(config);
+
+const geminiPrompt = `Analyze these HDB listings and identify "good deals" based on:
+- Price below median for the area
+- Remaining lease > 70 years
+- Good locations (near MRT)
+
+Listings: ${JSON.stringify(minoResult.resultJson)}
+
+Return only listings that meet the "good deal" criteria.`;
+
+const analysis = await gemini.generateContent(geminiPrompt);
+```
+
+**Key Learnings**:
+- Government sites often have simpler structures - lite mode works
+- Combining Mino extraction with AI analysis enables smart filtering
+- Scheduled runs can monitor for changes over time
+
+---
+
+## QA Dashboard
+
+**Goal**: Automate QA testing by parsing test requirements and executing browser tests.
+
+**Architecture**:
+- AI parses test documents into executable steps
+- Mino executes each test step
+- Results aggregated into dashboard
+
+**Test Execution Pattern**:
+```typescript
+const testCases = [
+  {
+    name: "Login Flow",
+    steps: [
+      { goal: "Navigate to login page and verify it loads" },
+      { goal: "Fill email with 'test@example.com' and password with 'testpass'" },
+      { goal: "Click login button and verify dashboard appears" },
+    ]
+  },
+  // ... more test cases
+];
+
+async function runTestSuite(testCases: TestCase[]) {
+  const results = [];
+
+  for (const test of testCases) {
+    console.log(`Running: ${test.name}`);
+
+    for (const step of test.steps) {
+      const result = await runMino({
+        url: test.startUrl,
+        goal: step.goal + " Return success:true if completed, success:false otherwise.",
+      });
+
+      results.push({
+        test: test.name,
+        step: step.goal,
+        success: result.resultJson?.success ?? false,
+        details: result.resultJson
+      });
+    }
+  }
+
+  return results;
+}
+```
+
+**Key Learnings**:
+- Mino can verify UI states, not just extract data
+- Adding "verify X" to goals enables assertion-like behavior
+- Parallel test execution needs careful state management
+- streamingUrl invaluable for debugging test failures
+
+---
+
+## Coupon Aggregator
+
+**Goal**: Collect active coupon codes from multiple sources.
+
+**Sites**: RetailMeNot, Honey, coupon blogs
+
+**Configuration**:
+```typescript
+const config = {
+  url: "https://www.retailmenot.com/view/amazon.com",
+  goal: `Extract all active coupon codes for this store:
+- Code (the actual coupon code)
+- Description (what the discount is)
+- Expiration date (if shown)
+- Success rate (if shown)
+
+Only include codes that are marked as "Verified" or have high success rates.
+Return as JSON array.`,
+  browser_profile: "stealth"
+};
+```
+
+**Key Learnings**:
+- Coupon sites often have bot protection
+- Some codes are hidden behind "reveal" buttons - include click action in goal
+- Success rate filtering reduces invalid codes
+- Codes expire - need regular refresh
+
+**Code Pattern - Reveal Hidden Codes**:
+```typescript
+const goal = `For each coupon on this page:
+1. Click the "Show Code" or "Reveal" button if present
+2. Extract the revealed code
+3. Extract the discount description
+
+Return all codes as JSON array.`;
+```
+
+---
+
+## Job Hunter
+
+**Goal**: Aggregate job listings from multiple job boards.
+
+**Sites**: LinkedIn, Indeed, Glassdoor, company career pages
+
+**Configuration**:
+```typescript
+const config = {
+  url: "https://www.indeed.com/jobs?q=software+engineer&l=San+Francisco",
+  goal: `Extract job listings from this search results page:
+- Job title
+- Company name
+- Location
+- Salary range (if shown)
+- Posted date
+- Job URL
+
+Extract from the first 2 pages of results.
+Return as JSON array.`,
+  browser_profile: "stealth",
+  proxy_config: { enabled: true, country_code: "US" }
+};
+```
+
+**Key Learnings**:
+- Job sites have heavy bot detection
+- Location-based filtering may require proxy from that region
+- Salary data often missing - handle gracefully
+- LinkedIn requires login for full data
+
+---
+
+## Implementation Patterns
+
+### Standard Extraction Template
+
+```typescript
+interface MinoUseCase {
+  name: string;
+  sites: Array<{
+    name: string;
+    url: string;
+    browserProfile?: "lite" | "stealth";
+    needsProxy?: boolean;
+  }>;
+  goal: string;
+  postProcess?: (data: any) => any;
+}
+
+async function runUseCase(useCase: MinoUseCase) {
+  const results = await Promise.all(
+    useCase.sites.map(async (site) => {
+      const config = {
+        url: site.url,
+        goal: useCase.goal,
+        browser_profile: site.browserProfile ?? "lite",
+        ...(site.needsProxy && {
+          proxy_config: { enabled: true, country_code: "US" }
+        })
+      };
+
+      const result = await runMino(config);
+      return {
+        source: site.name,
+        data: useCase.postProcess
+          ? useCase.postProcess(result.resultJson)
+          : result.resultJson
+      };
+    })
+  );
+
+  return results;
+}
+```
+
+### Error Handling Pattern
+
+```typescript
+async function runWithFallback(configs: MinoConfig[]) {
+  for (const config of configs) {
+    try {
+      const result = await runMino(config);
+      if (result.status === "COMPLETED") {
+        return result;
+      }
+    } catch (error) {
+      console.log(`Config failed, trying next:`, error.message);
+    }
+  }
+  throw new Error("All configurations failed");
+}
+
+// Usage: Try lite first, then stealth, then stealth+proxy
+const result = await runWithFallback([
+  { url, goal, browser_profile: "lite" },
+  { url, goal, browser_profile: "stealth" },
+  { url, goal, browser_profile: "stealth", proxy_config: { enabled: true, country_code: "US" } },
+]);
+```

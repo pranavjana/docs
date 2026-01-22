@@ -1,0 +1,269 @@
+# FAQ
+
+Common questions, errors, and their solutions.
+
+## Common Errors
+
+### Error: "Access Denied" or 403
+
+**Cause**: Bot detection triggered by the target site.
+
+**Solutions**:
+1. Switch to stealth mode:
+   ```typescript
+   browser_profile: "stealth"
+   ```
+
+2. Add a proxy:
+   ```typescript
+   proxy_config: { enabled: true, country_code: "US" }
+   ```
+
+3. Both together (most robust):
+   ```typescript
+   browser_profile: "stealth",
+   proxy_config: { enabled: true, country_code: "US" }
+   ```
+
+---
+
+### Error: Timeout / Request Timed Out
+
+**Cause**: Page loads slowly, or automation took too long.
+
+**Solutions**:
+1. Add explicit waits to your goal:
+   ```
+   Wait 5 seconds for the page to load, then extract...
+   ```
+
+2. Simplify the goal - break into multiple requests
+
+3. Try stealth mode (some sites throttle suspicious connections)
+
+4. Check if the site is actually accessible (try in browser)
+
+---
+
+### Error: Empty Results
+
+**Cause**: Element not found, or content loaded dynamically.
+
+**Solutions**:
+1. Watch the streamingUrl to see what's happening
+2. Add wait time for dynamic content:
+   ```
+   Wait for the product grid to load, then extract...
+   ```
+3. Use visual descriptions:
+   ```
+   Extract from the section with the heading "Products"
+   ```
+4. Check if content requires login or is geo-restricted
+
+---
+
+### Error: Partial Results
+
+**Cause**: Only some data extracted, pagination not handled.
+
+**Solutions**:
+1. Explicitly request pagination in goal:
+   ```
+   Navigate through 5 pages, extracting all products from each
+   ```
+2. Handle "Load More" buttons:
+   ```
+   Click "Load More" 3 times, then extract all visible items
+   ```
+3. Check streamingUrl to see if all content is visible
+
+---
+
+### Error: Wrong Element Clicked
+
+**Cause**: Goal description matches multiple elements.
+
+**Solutions**:
+1. Be more specific with visual descriptions:
+   ```
+   // Instead of:
+   Click the Submit button
+
+   // Use:
+   Click the green "Submit" button at the bottom of the form
+   ```
+
+2. Add context about location:
+   ```
+   In the checkout section, click the "Place Order" button
+   ```
+
+---
+
+### Error: CAPTCHA Challenge
+
+**Cause**: Site requires human verification.
+
+**Solutions**:
+1. Use stealth mode (helps avoid triggering CAPTCHA)
+2. Add proxy (different IP may not trigger CAPTCHA)
+3. If CAPTCHA persists, the site may not be automatable without additional tools
+
+---
+
+## General Questions
+
+### Q: When should I use stealth mode?
+
+**A**: Use stealth mode when:
+- Site shows CAPTCHA
+- Getting "Access Denied" errors
+- Site uses Cloudflare, DataDome, or similar protection
+- Site loads but automation fails mysteriously
+
+Default to `lite` mode first (faster), escalate to `stealth` if needed.
+
+---
+
+### Q: Which proxy country code should I use?
+
+**A**:
+| Country Code | Use For |
+|--------------|---------|
+| US | US-focused sites, financial sites, e-commerce |
+| GB | UK sites, European alternatives |
+| CA | Canadian content |
+| DE | German/EU sites |
+| FR | French sites |
+| JP | Japanese sites |
+| AU | Australian sites |
+
+Default to `US` unless you specifically need content from another region.
+
+---
+
+### Q: How do I handle login-required pages?
+
+**A**: Include login steps in your goal:
+
+```typescript
+goal: `
+1. Fill the email field with "user@example.com"
+2. Fill the password field with "password123"
+3. Click the "Login" button
+4. Wait for dashboard to load
+5. Extract the account balance
+`
+```
+
+For sensitive credentials, use environment variables:
+```typescript
+goal: `Login with email "${process.env.TEST_EMAIL}" and password "${process.env.TEST_PASSWORD}"`
+```
+
+---
+
+### Q: How long do automations take?
+
+**A**:
+| Type | Expected Time |
+|------|---------------|
+| Simple extraction (lite) | 3-10 seconds |
+| Multi-step workflow | 30-60 seconds |
+| Complex with stealth | 1-2 minutes |
+| With pagination (5+ pages) | 2-5 minutes |
+
+If exceeding these times significantly, check streamingUrl for issues.
+
+---
+
+### Q: What's the rate limit?
+
+**A**: Check your API plan. For development:
+- Space requests by 2-3 seconds when testing repeatedly
+- Use parallel requests carefully (may trigger rate limits)
+- Monitor for 429 errors
+
+---
+
+### Q: Can I automate sites that require JavaScript?
+
+**A**: Yes. Mino uses a real browser, so JavaScript-rendered content is fully supported. Just add wait time if content loads asynchronously:
+
+```
+Wait for the content to load, then extract...
+```
+
+---
+
+### Q: How do I debug a failing automation?
+
+**A**: Follow this process:
+
+1. **Check streamingUrl** - Watch the browser in real-time
+2. **Simplify the goal** - Reduce to the minimum failing case
+3. **Try stealth mode** - Rule out bot detection
+4. **Check the URL** - Make sure it's correct and accessible
+5. **Read the full response** - Error messages often contain clues
+
+See [QoL Tips](/qol-tips) for more debugging strategies.
+
+---
+
+### Q: Can I extract images?
+
+**A**: Yes. Ask for image URLs in your goal:
+
+```
+Extract product name and image URL for each product
+```
+
+The URLs can then be downloaded separately if needed.
+
+---
+
+### Q: How do I handle infinite scroll pages?
+
+**A**: Include scroll instructions in your goal:
+
+```
+Scroll down 5 times, waiting 2 seconds between each scroll.
+Then extract all visible items.
+```
+
+---
+
+### Q: What's the maximum response size?
+
+**A**: Results are returned as JSON. For very large extractions:
+- Break into multiple pages/requests
+- Process and store incrementally
+- Use pagination instead of extracting everything at once
+
+---
+
+## Troubleshooting Checklist
+
+When stuck, go through this checklist:
+
+- [ ] Is the URL correct and accessible in a normal browser?
+- [ ] Did you check the streamingUrl?
+- [ ] Is the goal specific enough?
+- [ ] Have you tried stealth mode?
+- [ ] Have you tried adding a proxy?
+- [ ] Is there dynamic content that needs wait time?
+- [ ] Are there popups that need to be handled?
+- [ ] Is the site geo-restricted?
+- [ ] Did you check for rate limiting?
+- [ ] Have you simplified the goal to isolate the issue?
+
+## Getting Help
+
+If you're still stuck:
+
+1. Check the [Workflow Playbook](/workflow-playbook) for systematic debugging
+2. Review [Best Practices](/best-practices) for common patterns
+3. Look at [Use Case Library](/use-case-library) for working examples
+4. Ask in the team Discord or Slack
+5. Contact support@tinyfish.io for API issues

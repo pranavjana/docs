@@ -1,0 +1,361 @@
+# QoL Tips
+
+Quality of life tips, debugging strategies, and productivity hacks for working with Mino.
+
+## Debug Checklist
+
+When something isn't working, go through this checklist:
+
+### 1. Check the streamingUrl
+
+The most valuable debugging tool. Every response includes a `streamingUrl`:
+
+```typescript
+// Always log this during development
+if (event.streamingUrl) {
+  console.log("🔴 Watch live:", event.streamingUrl);
+  // Open this URL in your browser to watch the automation
+}
+```
+
+Watch for:
+- Is the page loading correctly?
+- Is the automation clicking the right elements?
+- Are there popups blocking the view?
+- Is content loading dynamically?
+
+### 2. Simplify the Goal
+
+If a complex goal fails, break it down:
+
+```
+// Complex goal failing
+"Login, navigate to dashboard, click reports, select date range, export as CSV, extract filename"
+
+// Simplified to isolate the issue
+"Login with email 'test@example.com' and password 'pass123'"
+```
+
+### 3. Check Response Details
+
+Look at the full response, not just resultJson:
+
+```typescript
+console.log("Status:", event.status);
+console.log("Type:", event.type);
+console.log("Message:", event.message);
+console.log("Result:", JSON.stringify(event.resultJson, null, 2));
+```
+
+### 4. Try Stealth Mode
+
+If you're getting blocked or timing out:
+
+```typescript
+body: JSON.stringify({
+  // ... your config
+  browser_profile: "stealth"
+})
+```
+
+### 5. Add a Proxy
+
+For geo-restricted content or persistent blocking:
+
+```typescript
+proxy_config: {
+  enabled: true,
+  country_code: "US"
+}
+```
+
+### 6. Check the URL
+
+Common URL issues:
+- Missing `https://`
+- URL with session tokens that expired
+- URL that redirects to login
+- URL with special characters not properly encoded
+
+## Using streamingUrl Effectively
+
+The `streamingUrl` is valid for 24 hours and lets you watch the browser session.
+
+### Quick Access Script
+
+Add this helper to your development workflow:
+
+```typescript
+function handleEvent(event: any) {
+  if (event.streamingUrl) {
+    // On macOS, this opens the URL in your browser
+    require('child_process').exec(`open "${event.streamingUrl}"`);
+  }
+
+  if (event.type === "STEP") {
+    console.log(`📍 Step: ${event.message}`);
+  }
+
+  if (event.type === "COMPLETE") {
+    console.log(`✅ Complete: ${event.status}`);
+    console.log(event.resultJson);
+  }
+}
+```
+
+### What to Look For
+
+When watching the stream:
+
+| Observation | Diagnosis | Action |
+|-------------|-----------|--------|
+| Page loads but automation does nothing | Goal unclear or element not found | Add visual descriptions |
+| Popup appears and blocks interaction | Need to handle popup | Add "close popup" to goal |
+| Page shows CAPTCHA | Bot detection triggered | Use stealth + proxy |
+| Content area is empty | JS not loaded yet | Add wait time |
+| Wrong element clicked | Ambiguous description | Be more specific |
+
+## Prompt Revision Strategies
+
+### The Progressive Enhancement Pattern
+
+Start minimal and add complexity:
+
+```typescript
+// Version 1: Basic
+const goal_v1 = "Extract product names";
+
+// Version 2: Add data points
+const goal_v2 = "Extract product names, prices, and ratings";
+
+// Version 3: Specify structure
+const goal_v3 = `For each product, extract:
+- name
+- price
+- rating
+Return as JSON array`;
+
+// Version 4: Handle edge cases
+const goal_v4 = `Close any popups that appear.
+For each product visible on the page, extract:
+- name
+- price
+- rating
+Return as JSON array`;
+```
+
+### The Diagnostic Pattern
+
+When something fails, add logging to the goal:
+
+```
+Before extracting, describe what you see on the page:
+- What is the main heading?
+- How many products are visible?
+- Are there any popups or overlays?
+
+Then extract the product names.
+```
+
+### The Visual Anchor Pattern
+
+Use visual landmarks to guide the automation:
+
+```
+Find the section with the heading "Featured Products"
+Within that section, extract all product cards
+For each card, get the name (bold text), price (in dollars), and rating (stars)
+```
+
+## Development Workflow Tips
+
+### 1. Create a Test Harness
+
+Build a simple test script for rapid iteration:
+
+```typescript
+// test-mino.ts
+import { runMino } from './lib/mino-client';
+
+const testCases = [
+  {
+    name: "Basic extraction",
+    config: {
+      url: "https://scrapeme.live/shop/",
+      goal: "Extract first 3 product names"
+    }
+  },
+  // Add more test cases
+];
+
+async function runTests() {
+  for (const test of testCases) {
+    console.log(`\n--- ${test.name} ---`);
+    const result = await runMino(test.config);
+    console.log(result);
+  }
+}
+
+runTests();
+```
+
+### 2. Save Successful Configs
+
+When a configuration works, save it:
+
+```typescript
+// configs/working-configs.ts
+export const CONFIGS = {
+  amazonProduct: {
+    browser_profile: "stealth",
+    proxy_config: { enabled: true, country_code: "US" },
+    goal: "Extract product title, price, rating, and review count"
+  },
+  // Add more working configs
+};
+```
+
+### 3. Use Environment Variables
+
+Keep API keys and sensitive data out of code:
+
+```bash
+# .env
+MINO_API_KEY=your_key_here
+TEST_EMAIL=test@example.com
+TEST_PASSWORD=testpass123
+```
+
+```typescript
+const config = {
+  url: "https://app.example.com/login",
+  goal: `Login with email "${process.env.TEST_EMAIL}" and password "${process.env.TEST_PASSWORD}"`
+};
+```
+
+### 4. Parallel Development
+
+When building multiple automations, run them in parallel:
+
+```typescript
+const configs = [
+  { url: "site1.com", goal: "..." },
+  { url: "site2.com", goal: "..." },
+  { url: "site3.com", goal: "..." },
+];
+
+const results = await Promise.all(
+  configs.map(config => runMino(config))
+);
+```
+
+## Common Gotchas
+
+### 1. SSE Parsing Edge Cases
+
+Handle incomplete lines in SSE streams:
+
+```typescript
+let buffer = "";
+
+for await (const chunk of stream) {
+  buffer += chunk;
+
+  // Split on newlines, but keep incomplete last line
+  const lines = buffer.split("\n");
+  buffer = lines.pop() ?? ""; // Keep incomplete line
+
+  for (const line of lines) {
+    if (line.startsWith("data: ")) {
+      // Parse complete lines only
+    }
+  }
+}
+```
+
+### 2. Timeout Handling
+
+Set appropriate timeouts:
+
+```typescript
+const controller = new AbortController();
+const timeout = setTimeout(() => controller.abort(), 120000); // 2 min
+
+try {
+  const response = await fetch(MINO_URL, {
+    signal: controller.signal,
+    // ... rest of config
+  });
+} finally {
+  clearTimeout(timeout);
+}
+```
+
+### 3. Rate Limiting
+
+Space out requests to avoid overloading:
+
+```typescript
+async function runWithDelay(configs: Config[], delayMs = 2000) {
+  const results = [];
+  for (const config of configs) {
+    results.push(await runMino(config));
+    await new Promise(r => setTimeout(r, delayMs));
+  }
+  return results;
+}
+```
+
+### 4. Memory with Large Results
+
+For large extractions, process incrementally:
+
+```typescript
+let allProducts: Product[] = [];
+
+for (let page = 1; page <= 10; page++) {
+  const result = await runMino({
+    url: `https://site.com/products?page=${page}`,
+    goal: "Extract all products on this page"
+  });
+
+  allProducts.push(...result.products);
+
+  // Write intermediate results to avoid memory issues
+  if (page % 5 === 0) {
+    await saveToFile(allProducts);
+    allProducts = [];
+  }
+}
+```
+
+## Keyboard Shortcuts for Productivity
+
+If using VS Code with the test harness:
+
+| Action | Shortcut |
+|--------|----------|
+| Run current file | `Cmd/Ctrl + Shift + B` (if configured) |
+| Open terminal | `` Cmd/Ctrl + ` `` |
+| Quick open file | `Cmd/Ctrl + P` |
+| Search across files | `Cmd/Ctrl + Shift + F` |
+
+Set up a task for quick testing:
+
+```json
+// .vscode/tasks.json
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Test Mino",
+      "type": "shell",
+      "command": "npx ts-node test-mino.ts",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    }
+  ]
+}
+```
