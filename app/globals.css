@@ -163,3 +163,13 @@ html.dark p, html.dark li, html.dark td, html.dark th {
 footer {
   color: var(--mino-text-muted);
 }
+
+/* Hide anchor links on headings */
+h1 a.subheading-anchor,
+h2 a.subheading-anchor,
+h3 a.subheading-anchor,
+h4 a.subheading-anchor,
+h5 a.subheading-anchor,
+h6 a.subheading-anchor {
+  display: none !important;
+}

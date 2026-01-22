@@ -7,4 +7,8 @@ const withNextra = nextra({
 
 export default withNextra({
   // Next.js config options
+  output: 'export',
+  images: {
+    unoptimized: true,
+  },
 })

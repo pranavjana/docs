@@ -11,7 +11,6 @@ const meta = {
   'duplicable-prd': 'Duplicable PRD',
   'best-practices': 'Best Practices',
   'qol-tips': 'QoL Tips',
-  'use-case-library': 'Use Case Library',
   faq: 'FAQ',
   '---': {
     type: 'separator',
