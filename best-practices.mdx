@@ -1,0 +1,221 @@
+---
+title: "Best Practices"
+description: "Writing effective Mino goals and handling common challenges"
+icon: "star"
+---
+
+## Goal Writing Rules
+
+### Be Specific, Not Vague
+
+| Bad | Good |
+|-----|------|
+| "Get data" | "Extract product name, price, and rating" |
+| "Fill the form" | "Fill email field with 'test@example.com'" |
+| "Click the button" | "Click the blue 'Submit' button in the bottom right" |
+| "Extract everything" | "Extract all h2 headings and their associated paragraphs" |
+
+### Use Visual Descriptions
+
+When elements are hard to identify:
+
+```
+Click the orange "Buy Now" button below the price
+
+Find the search box with magnifying glass icon in the header
+
+Click the X button in the top right corner of the popup
+```
+
+### Number Your Steps
+
+For multi-step workflows:
+
+```
+1. Click the "Sign In" button
+2. Fill email with "user@example.com"
+3. Fill password with "password123"
+4. Click "Login"
+5. Wait for dashboard to load
+6. Extract account balance
+```
+
+### Specify Output Format
+
+```
+Extract all products and return as JSON array with keys: name, price, url
+```
+
+---
+
+## Handling Blocked Sites
+
+### Signs You're Being Blocked
+
+- "Access Denied" message
+- CAPTCHA challenges
+- Endless loading
+- 403/429 HTTP errors
+- Empty responses
+
+### Escalation Path
+
+```
+1. lite profile (default)
+      ↓ Still blocked?
+2. stealth profile
+      ↓ Still blocked?
+3. stealth + proxy
+      ↓ Still blocked?
+4. stealth + proxy + different country code
+```
+
+### Configuration Examples
+
+**Default:**
+```typescript
+{ url: "https://site.com", goal: "Extract pricing" }
+```
+
+**Stealth:**
+```typescript
+{ url: "https://site.com", goal: "Extract pricing", browser_profile: "stealth" }
+```
+
+**Stealth + Proxy:**
+```typescript
+{
+  url: "https://site.com",
+  goal: "Extract pricing",
+  browser_profile: "stealth",
+  proxy_config: { enabled: true, country_code: "US" }
+}
+```
+
+---
+
+## Handling Dynamic Content
+
+### Wait for Content
+
+```
+Wait 3 seconds for the product grid to load, then extract all product names
+```
+
+### Infinite Scroll
+
+```
+Scroll down 3 times, waiting 2 seconds between each scroll, then extract all visible items
+```
+
+### Load More Buttons
+
+```
+Click the "Load More" button 5 times, then extract all items
+```
+
+---
+
+## Handling Popups
+
+### Cookie Consent
+```
+If a cookie consent banner appears, click "Accept All".
+Then extract the main content.
+```
+
+### Newsletter Popups
+```
+If a newsletter popup appears, click the X button to close it.
+Then extract the product information.
+```
+
+---
+
+## Error Handling in Code
+
+### Retry Logic
+
+```typescript
+async function runWithRetry(config: MinoConfig, maxRetries = 3) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const result = await runMino(config);
+      if (result.status === "COMPLETED") return result;
+    } catch (error) {
+      console.log(`Attempt ${attempt} failed, retrying...`);
+    }
+    await new Promise(r => setTimeout(r, 2000 * attempt));
+  }
+  throw new Error("Max retries exceeded");
+}
+```
+
+### Graceful Degradation
+
+```typescript
+const result = await runMino(config);
+
+if (result.status === "COMPLETED") {
+  return result.resultJson;
+} else if (result.status === "PARTIAL") {
+  console.warn("Partial results:", result.resultJson);
+  return result.resultJson;
+} else {
+  console.error("Automation failed:", result.error);
+  return { products: [], error: result.error };
+}
+```
+
+---
+
+## Performance Tips
+
+### Mode Selection
+
+| Mode | Time | Use When |
+|------|------|----------|
+| `lite` | 3-10s | Standard sites, no protection |
+| `stealth` | 10-30s | Bot protection, CAPTCHAs |
+| `stealth` + proxy | 15-45s | Geo-restrictions, heavy protection |
+
+### Parallel Requests
+
+```typescript
+const results = await Promise.all([
+  runMino({ url: "site.com/page/1", goal }),
+  runMino({ url: "site.com/page/2", goal }),
+  runMino({ url: "site.com/page/3", goal }),
+]);
+```
+
+---
+
+## Common Mistakes
+
+### 1. Being Too Vague
+```
+// Don't: "Get the data"
+// Do: "Extract product name, price, and URL from each product card"
+```
+
+### 2. Ignoring Load Times
+```
+// Don't: "Extract search results"
+// Do: "Wait for search results to load, then extract all result titles and URLs"
+```
+
+### 3. Not Handling Popups
+```
+// Don't: "Extract all article titles"
+// Do: "Close any popups that appear, then extract all article titles"
+```
+
+### 4. Over-Complicating Goals
+```
+// Don't: "Navigate through 50 pages, scroll each 3 times, click all load more buttons..."
+// Do: "Extract product name and price from all visible products on this page"
+```
+
+### 5. Not Escalating When Blocked
+If you get blocked, try stealth mode before debugging the goal.

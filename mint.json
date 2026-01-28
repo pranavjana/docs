@@ -1,0 +1,90 @@
+{
+  "$schema": "https://mintlify.com/schema.json",
+  "name": "Tinyfish Intern Docs",
+  "logo": {
+    "dark": "https://mintcdn.com/tinyfish/RvmxMWoc-1XTfUBf/logo/dark.svg?fit=max&auto=format&n=RvmxMWoc-1XTfUBf&q=85&s=1de0f1f6988151c486d7f1c6412379e0",
+    "light": "https://mintcdn.com/tinyfish/mQYu4dnoEE8nM-3s/logo/TF_Horizontal.svg?fit=max&auto=format&n=mQYu4dnoEE8nM-3s&q=85&s=a0b4c2805d9641a68ccc350179559f08"
+  },
+  "favicon": "/favicon.svg",
+  "modeToggle": {
+    "default": "dark"
+  },
+  "fonts": {
+    "heading": {
+      "family": "Hanken Grotesk",
+      "weight": 600
+    },
+    "body": {
+      "family": "Hanken Grotesk",
+      "weight": 400
+    }
+  },
+  "css": "/global.css",
+  "colors": {
+    "primary": "#D76228",
+    "light": "#D76228",
+    "dark": "#165762",
+    "background": {
+      "light": "#F4F3F2",
+      "dark": "#0d0d0d"
+    },
+    "anchors": {
+      "from": "#D76228",
+      "to": "#165762"
+    }
+  },
+  "search": {
+    "prompt": "Search docs or ask a question..."
+  },
+  "topbarLinks": [
+    {
+      "name": "API Docs",
+      "url": "https://docs.mino.ai"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "Get API Key",
+    "url": "https://mino.ai/api-keys"
+  },
+  "anchors": [
+    {
+      "name": "Cookbook",
+      "icon": "book-open",
+      "url": "https://github.com/tinyfish-io/TinyFish-cookbook"
+    }
+  ],
+  "navigation": [
+    {
+      "group": "Getting Started",
+      "pages": ["introduction", "get-started"]
+    },
+    {
+      "group": "Guides",
+      "pages": ["workflow-playbook", "prompt-templates", "best-practices", "qol-tips"]
+    },
+    {
+      "group": "Reference",
+      "pages": ["god-mode", "duplicable-prd", "faq"]
+    }
+  ],
+  "footerSocials": {
+    "discord": "https://discord.gg/agentql",
+    "github": "https://github.com/tinyfish-io/TinyFish-cookbook"
+  },
+  "feedback": {
+    "thumbsRating": true,
+    "suggestEdit": true
+  },
+  "contextual": {
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "perplexity",
+      "mcp",
+      "cursor",
+      "vscode"
+    ]
+  }
+}

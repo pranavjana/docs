@@ -1,37 +1,53 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Mino Intern Docs
 
-## Getting Started
+Documentation site for Mino interns, built with [Mintlify](https://mintlify.com).
 
-First, run the development server:
+## Development
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to view the docs.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deployment
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+This site is deployed to Vercel at [mino-intern-docs.vercel.app](https://mino-intern-docs.vercel.app).
 
-## Learn More
+Deployments are automatic on push to the main branch.
 
-To learn more about Next.js, take a look at the following resources:
+## Structure
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+├── mint.json           # Mintlify configuration
+├── introduction.mdx    # Home page
+├── get-started.mdx     # Getting started guide
+├── workflow-playbook.mdx
+├── prompt-templates.mdx
+├── best-practices.mdx
+├── qol-tips.mdx
+├── god-mode.mdx
+├── duplicable-prd.mdx
+├── faq.mdx
+└── public/             # Static assets (logo, favicon)
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Adding New Pages
 
-## Deploy on Vercel
+1. Create a new `.mdx` file at the root
+2. Add frontmatter with `title` and `description`
+3. Add the page to `mint.json` navigation
+4. Commit and push
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Resources
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-# mino-intern-docs
+- [Mintlify Documentation](https://mintlify.com/docs)
+- [Mino API Docs](https://docs.mino.ai)

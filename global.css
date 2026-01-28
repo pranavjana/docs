@@ -1,0 +1,35 @@
+@import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&display=swap');
+
+:root {
+  --font-family: 'Hanken Grotesk', sans-serif;
+}
+
+body {
+  font-family: 'Hanken Grotesk', sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Hanken Grotesk', sans-serif;
+}
+
+/* Dark mode enhancements */
+[data-theme="dark"] {
+  --background: #0d0d0d;
+  --background-secondary: #141414;
+}
+
+/* Code block styling */
+[data-theme="dark"] pre {
+  background: #0d0d0d !important;
+  border: 1px solid #262626;
+}
+
+/* Sidebar styling */
+[data-theme="dark"] nav {
+  background: #0d0d0d;
+}
+
+/* Card hover effects */
+[data-theme="dark"] .card:hover {
+  border-color: #D76228;
+}

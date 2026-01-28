@@ -1,0 +1,237 @@
+---
+title: "Workflow Playbook"
+description: "Systematic approach to building Mino use cases"
+icon: "map"
+---
+
+## The 5-Phase Workflow
+
+```
+Define → Research → Configure → Build → Iterate
+```
+
+---
+
+## Phase 1: Define
+
+Before writing code, answer these questions:
+
+| Question | Example |
+|----------|---------|
+| What's the end result? | JSON with product data |
+| What are the inputs? | Category filter, URL |
+| What are the constraints? | Geo-restricted to US |
+
+**Example Definition:**
+```
+Use Case: Credit Card Comparison
+Goal: Extract offers from 6 financial sites
+Output: JSON with card name, APR, fee, rewards
+Constraints: Some sites US-only
+```
+
+---
+
+## Phase 2: Research
+
+Manually explore each target site before automating.
+
+### Site Analysis Checklist
+
+For each site, document:
+
+- **URL Structure** - Stable? Changes with filters?
+- **Bot Protection** - Cloudflare? CAPTCHA?
+- **Content Loading** - Static HTML or JavaScript?
+- **Pagination** - Infinite scroll? Page numbers? Load more?
+- **Authentication** - Login required?
+- **Geo Restrictions** - US-only? Region-locked?
+
+**Example:**
+```
+Site: example-bank.com
+URL: https://example-bank.com/credit-cards
+Protection: Cloudflare (needs stealth)
+Content: JS-rendered, loads in 2-3s
+Pagination: "Load More" button
+Auth: Not required
+Geo: US-only (needs proxy)
+```
+
+---
+
+## Phase 3: Configure
+
+### Browser Profile
+
+```
+Site has bot protection?
+├─ Yes → "stealth"
+└─ No → "lite" (default)
+```
+
+### Proxy
+
+```
+Content geo-restricted?
+├─ Yes → Enable proxy
+└─ No → Skip proxy
+```
+
+### Configuration Template
+
+```typescript
+const config = {
+  url: "https://target-site.com/page",
+  goal: "...",
+
+  // Add only if needed:
+  browser_profile: "stealth",
+  proxy_config: { enabled: true, country_code: "US" },
+};
+```
+
+---
+
+## Phase 4: Build
+
+Start simple, then add complexity:
+
+**Step 1 - Basic:**
+```
+Extract the first product name
+```
+
+**Step 2 - More data:**
+```
+Extract product name, price, and rating
+```
+
+**Step 3 - All items:**
+```
+Extract product name, price, and rating for all products on this page
+```
+
+**Step 4 - Structured:**
+```
+For each product on this page, extract:
+- name
+- price
+- rating
+- url
+
+Return as JSON array
+```
+
+**Step 5 - Handle edge cases:**
+```
+If a cookie consent popup appears, click "Accept".
+
+For each product on this page, extract:
+- name
+- price
+- rating
+- url
+
+Return as JSON array
+```
+
+---
+
+## Phase 5: Iterate
+
+### Use streamingUrl
+
+Every response includes a `streamingUrl` to watch the browser live:
+
+```typescript
+if (event.streamingUrl) {
+  console.log("Watch live:", event.streamingUrl);
+}
+```
+
+### Common Issues
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| Empty results | Element not found | Watch streamingUrl, adjust goal |
+| Timeout | Page loads slowly | Add wait time |
+| Access denied | Bot detection | Use stealth mode |
+| Partial data | Pagination missed | Add pagination to goal |
+| Wrong data | Ambiguous goal | Be more specific |
+
+### Iteration Cycle
+
+```
+Run → Observe (streamingUrl) → Diagnose → Refine → Run
+```
+
+### Refinement Examples
+
+**Too vague → Specific:**
+```
+// Before: "Get the data from the page"
+// After: "Extract the product table showing name, price, and availability"
+```
+
+**Element not found → Visual description:**
+```
+// Before: "Click the Submit button"
+// After: "Click the green Submit button at the bottom right of the form"
+```
+
+**Timing issue → Add wait:**
+```
+// Before: "Extract search results"
+// After: "Wait 3 seconds for results to load, then extract search results"
+```
+
+---
+
+## Complete Example
+
+### 1. Define
+```
+Goal: Extract job listings from LinkedIn
+Data: Job title, company, location, date, URL
+Constraint: Needs login, geo-restricted
+```
+
+### 2. Research
+```
+URL: linkedin.com/jobs/search/?keywords=...
+Protection: Heavy bot detection
+Content: Dynamic JavaScript
+Auth: Required
+Geo: Results vary by region
+```
+
+### 3. Configure
+```typescript
+const config = {
+  url: "https://linkedin.com/jobs/search/?keywords=software+engineer",
+  browser_profile: "stealth",
+  proxy_config: { enabled: true, country_code: "US" },
+};
+```
+
+### 4. Build
+```typescript
+const goal = `
+1. If login prompt appears, enter email and password
+2. Wait for job listings to load
+3. For each job listing, extract:
+   - Job title
+   - Company name
+   - Location
+   - Posting date
+   - Job URL
+4. Return as JSON array
+`;
+```
+
+### 5. Iterate
+- Watch streamingUrl to verify login
+- Adjust wait times if content loads slowly
+- Refine descriptions if extraction misses items
+- Handle popups or modals

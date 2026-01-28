@@ -1,0 +1,13 @@
+<svg width="180" height="28" viewBox="0 0 180 28" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      @font-face {
+        font-family: 'Hanken Grotesk';
+        font-weight: 600;
+        src: url('data:font/truetype;base64,AAEAAAASAQAABAAgR0RFRgARAAQAAAEsAAAAFkdQT1MrviSMAAABRAAAAGZHU1VCuPy46gAAAawAAAAoSFZBUhpQze8AAAHUAAAAaU9TLzJWEZXDAAACQAAAAGBTVEFU+N/VzwAAAqAAAAC4Y21hcEHQ4lsAAANYAAAAXGZ2YXKXu2mSAAADtAAAAGxnYXNwAAAAEAAABCAAAAAIZ2x5ZjfDZwYAAAQoAAABfGd2YXJjsL7NAAAFuAAAAipoZWFkKp9bgQAAB+QAAAA2aGhlYQhMAWoAAAgcAAAAJGhtdHgN3QCpAAAIQAAAACJsb2NhAWAB6gAABaQAAAAUbWF4cAAcAOUAAAhkAAAAIG5hbWVQcIw1AAAIhAAAA1Bwb3N09W7xyQAAC9QAAABiAAEAAAAMAAAAAAAAAAIAAQABAAMAAQAAAAEAAAAKACQAMgACREZMVAAObGF0bgAOAAQAAAAA//8AAQAAAAFrZXJuAAgAAAABAAAA') format('truetype');
+      }
+      .logo-text { font-family: 'Hanken Grotesk', sans-serif; font-weight: 600; }
+    </style>
+  </defs>
+  <text x="0" y="20" class="logo-text" font-size="18" fill="#1a1a1a">Tinyfish Intern Docs</text>
+</svg>

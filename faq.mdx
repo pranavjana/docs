@@ -1,0 +1,170 @@
+---
+title: "FAQ"
+description: "Common errors and solutions"
+icon: "circle-question"
+---
+
+## Common Errors
+
+### "Access Denied" or 403
+
+**Cause**: Bot detection triggered.
+
+**Fix**: Escalate your configuration:
+
+```typescript
+// Step 1: Add stealth mode
+browser_profile: "stealth"
+
+// Step 2: If still blocked, add proxy
+browser_profile: "stealth",
+proxy_config: { enabled: true, country_code: "US" }
+```
+
+---
+
+### Timeout
+
+**Cause**: Page loads slowly or automation took too long.
+
+**Fix**:
+1. Add explicit waits: `"Wait 5 seconds for the page to load, then extract..."`
+2. Simplify the goal - break into multiple requests
+3. Try stealth mode (some sites throttle suspicious connections)
+
+---
+
+### Empty Results
+
+**Cause**: Element not found or content loaded dynamically.
+
+**Fix**:
+1. Watch the `streamingUrl` to see what's happening
+2. Add wait time: `"Wait for the product grid to load, then extract..."`
+3. Use visual descriptions: `"Extract from the section with heading 'Products'"`
+
+---
+
+### Partial Results
+
+**Cause**: Pagination not handled.
+
+**Fix**:
+```
+Navigate through 5 pages, extracting all products from each
+```
+Or for "Load More" buttons:
+```
+Click "Load More" 3 times, then extract all visible items
+```
+
+---
+
+### Wrong Element Clicked
+
+**Cause**: Ambiguous element description.
+
+**Fix**: Be more specific:
+```
+// Instead of:
+Click the Submit button
+
+// Use:
+Click the green "Submit" button at the bottom of the form
+```
+
+---
+
+### CAPTCHA Challenge
+
+**Cause**: Site requires human verification.
+
+**Fix**:
+1. Use stealth mode
+2. Add proxy (different IP may not trigger CAPTCHA)
+3. If CAPTCHA persists, the site may not be automatable
+
+---
+
+## Quick Reference
+
+### When to Use Stealth Mode
+
+Use `stealth` when:
+- Site shows CAPTCHA
+- Getting "Access Denied" errors
+- Site uses Cloudflare or similar protection
+- Automation fails mysteriously
+
+Default to `lite` (faster), escalate to `stealth` if needed.
+
+### Proxy Country Codes
+
+| Code | Use For |
+|------|---------|
+| `US` | US sites, financial, e-commerce (default) |
+| `GB` | UK sites |
+| `CA` | Canadian content |
+| `DE` | German/EU sites |
+| `FR` | French sites |
+| `JP` | Japanese sites |
+| `AU` | Australian sites |
+
+### Expected Timing
+
+| Type | Time |
+|------|------|
+| Simple extraction (lite) | 3-10 seconds |
+| Multi-step workflow | 30-60 seconds |
+| Complex with stealth | 1-2 minutes |
+| With pagination (5+ pages) | 2-5 minutes |
+
+### Login-Required Pages
+
+Include login steps in your goal:
+
+```typescript
+goal: `
+1. Fill the email field with "user@example.com"
+2. Fill the password field with "password123"
+3. Click the "Login" button
+4. Wait for dashboard to load
+5. Extract the account balance
+`
+```
+
+### Infinite Scroll
+
+```
+Scroll down 5 times, waiting 2 seconds between each scroll.
+Then extract all visible items.
+```
+
+### JavaScript Sites
+
+Mino uses a real browser - JS content is fully supported. Just add wait time:
+```
+Wait for the content to load, then extract...
+```
+
+---
+
+## Debug Checklist
+
+When stuck, verify:
+
+1. Is the URL correct and accessible in a browser?
+2. Did you check the `streamingUrl`?
+3. Is the goal specific enough?
+4. Have you tried stealth mode?
+5. Have you tried adding a proxy?
+6. Does dynamic content need wait time?
+7. Are there popups that need handling?
+8. Is the site geo-restricted?
+
+## Getting Help
+
+1. Check the [Workflow Playbook](/workflow-playbook) for systematic debugging
+2. Review [Best Practices](/best-practices) for common patterns
+3. Ask in the team Discord or Slack
+4. Contact support@tinyfish.io for API issues

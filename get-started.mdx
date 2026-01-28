@@ -1,0 +1,105 @@
+---
+title: "Quickstart"
+description: "Your checklist for building Mino use cases"
+icon: "circle-check"
+---
+
+## What This Site Covers
+
+- **Prompt Templates** - Ready-to-use goal templates
+- **Workflow Playbook** - Systematic approach to building use cases
+- **Best Practices** - Writing effective goals
+- **FAQ** - Common errors and solutions
+
+<Note>
+For API reference and authentication, see the official [Mino API docs](https://docs.mino.ai).
+</Note>
+
+## Use Case Checklist
+
+Before starting a new use case, work through these steps:
+
+### 1. Define the Goal
+- What data do you need to extract?
+- What actions need to be performed?
+- Is there pagination or multiple pages?
+- Are there login/authentication requirements?
+
+### 2. Analyze the Target Site
+- Is the URL stable and public?
+- Does the site have bot protection (Cloudflare, CAPTCHAs)?
+- Does the site require geographic location for access?
+- Is the content loaded dynamically (JavaScript)?
+
+### 3. Choose Browser Profile
+
+| Profile | Use When |
+|---------|----------|
+| `lite` (default) | Standard sites without bot protection |
+| `stealth` | Sites with bot detection, CAPTCHAs, or Cloudflare |
+
+### 4. Determine Proxy Needs
+
+Add a proxy if:
+- Content is geo-restricted
+- Getting "Access Denied" errors
+
+Supported country codes: `US`, `GB`, `CA`, `DE`, `FR`, `JP`, `AU`
+
+### 5. Write Your Goal
+- Be specific and actionable
+- Number steps for multi-step workflows
+- Describe UI elements visually
+- Add wait times for slow content
+
+### 6. Test and Iterate
+- Run initial request
+- Check `streamingUrl` to watch browser behavior
+- Refine goal based on results
+
+## Quick Start Code
+
+```typescript
+const response = await fetch("https://mino.ai/v1/automation/run-sse", {
+  method: "POST",
+  headers: {
+    "X-API-Key": process.env.MINO_API_KEY!,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    url: "https://scrapeme.live/shop",
+    goal: "Extract the first 3 product names and their prices",
+  }),
+});
+
+// Parse SSE response
+const reader = response.body!.getReader();
+const decoder = new TextDecoder();
+let buffer = "";
+
+while (true) {
+  const { done, value } = await reader.read();
+  if (done) break;
+
+  buffer += decoder.decode(value, { stream: true });
+  const lines = buffer.split("\n");
+  buffer = lines.pop() ?? "";
+
+  for (const line of lines) {
+    if (line.startsWith("data: ")) {
+      const event = JSON.parse(line.slice(6));
+      if (event.type === "COMPLETE" && event.status === "COMPLETED") {
+        console.log("Result:", event.resultJson);
+      }
+    }
+  }
+}
+```
+
+## Expected Timing
+
+| Task Type | Expected Time |
+|-----------|---------------|
+| Simple extraction | 3-10 seconds |
+| Multi-step automation | 30-60 seconds |
+| Complex with stealth | 1-2 minutes |
